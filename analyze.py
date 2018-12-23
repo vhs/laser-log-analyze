@@ -1,7 +1,6 @@
 import os
 import re
 from datetime import datetime, timedelta
-import yaml
 from collections import defaultdict
 
 
@@ -38,18 +37,16 @@ def handle_laser_control(line):
 
 def print_summary(cumm_time, num_sessions, uid_map):
     # Restructure as a list of tuples of the form (duration, userid)
-    users = [(x[1], x[0]) for x in cumm_time.iteritems()]
-
-    print("{} users:".format(len(users)))
+    users = [(x[1], x[0]) for x in cumm_time.items()]
 
     # Sort largest-to-smallest
     for (dur, user_id) in sorted(users, reverse=True):
-        print "{} over {} sessions by user {}".format(
+        print("{} over {} sessions by user {}".format(
             dur,
             num_sessions[user_id],
             user_id,
             #uid_map[user_id],
-        )
+        ))
 
 
 
@@ -58,6 +55,8 @@ class LaserAnalyze(object):
        and reconstruct laser usage events"""
 
     def __init__(self):
+        self.total_sessions = 0
+
         self.last_userid = None
         self.start_time = None
 
@@ -71,6 +70,12 @@ class LaserAnalyze(object):
             with open(filepath, 'r') as fh:
                 for line in fh:
                     self.handle_line(line)
+
+        print("Found {} sessions for {} users in {} files".format(
+            self.total_sessions, 
+            len(self.num_sessions),
+            len(logfiles),
+        ))
 
     def handle_line(self, line):
         if 'laser:mmp' in line:
@@ -89,6 +94,7 @@ class LaserAnalyze(object):
                     self.start_time = None
 
     def found_session(self, user_id, start_time, end_time):
+        self.total_sessions += 1
         #print(user_id, start_time.isoformat(), end_time-start_time)
         self.cumm_time_per_userid[user_id] += end_time-start_time
         self.num_sessions[user_id]+=1
